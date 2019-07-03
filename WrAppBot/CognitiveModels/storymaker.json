@@ -1,0 +1,106 @@
+{
+  "luis_schema_version": "3.2.0",
+  "versionId": "0.1",
+  "name": "storymaker",
+  "desc": "An app that creates stories",
+  "culture": "en-us",
+  "tokenizerVersion": "1.0.0",
+  "intents": [
+    {
+      "name": "createStory"
+    },
+    {
+      "name": "None"
+    }
+  ],
+  "entities": [
+    {
+      "name": "mood",
+      "roles": []
+    },
+    {
+      "name": "topic",
+      "roles": []
+    }
+  ],
+  "composites": [],
+  "closedLists": [],
+  "patternAnyEntities": [],
+  "regex_entities": [],
+  "prebuiltEntities": [],
+  "model_features": [],
+  "regex_features": [],
+  "patterns": [],
+  "utterances": [
+    {
+      "text": "i want to crete a story",
+      "intent": "createStory",
+      "entities": []
+    },
+    {
+      "text": "i want to tell a story about pirates",
+      "intent": "createStory",
+      "entities": [
+        {
+          "entity": "topic",
+          "startPos": 29,
+          "endPos": 35
+        }
+      ]
+    },
+    {
+      "text": "i want to write a horror story",
+      "intent": "createStory",
+      "entities": [
+        {
+          "entity": "mood",
+          "startPos": 18,
+          "endPos": 23
+        }
+      ]
+    },
+    {
+      "text": "i would like to tell a story",
+      "intent": "createStory",
+      "entities": []
+    },
+    {
+      "text": "i would like to write a cute story",
+      "intent": "createStory",
+      "entities": [
+        {
+          "entity": "mood",
+          "startPos": 24,
+          "endPos": 27
+        }
+      ]
+    },
+    {
+      "text": "i'd like to create a story",
+      "intent": "createStory",
+      "entities": []
+    },
+    {
+      "text": "i'd like to write a book",
+      "intent": "createStory",
+      "entities": []
+    },
+    {
+      "text": "let me write a scary story about dogs",
+      "intent": "createStory",
+      "entities": [
+        {
+          "entity": "mood",
+          "startPos": 15,
+          "endPos": 19
+        },
+        {
+          "entity": "topic",
+          "startPos": 33,
+          "endPos": 36
+        }
+      ]
+    }
+  ],
+  "settings": []
+}
