@@ -11,11 +11,15 @@ using Microsoft.Recognizers.Text.DataTypes.TimexExpression;
 
 namespace WrAppBot.Dialogs
 {
-    public class StoryDialog : CancelAndHelpDialog
+    public class StoryDetailsDialog : ComponentDialog
     {
-        public StoryDialog()
-            : base(nameof(StoryDialog))
+        private readonly IStatePropertyAccessor<StoryDetails> _storyDetailsAccessor;
+
+        public StoryDetailsDialog()
+            : base(nameof(StoryDetailsDialog))
         {
+
+
             AddDialog(new TextPrompt(nameof(TextPrompt)));
             AddDialog(new ConfirmPrompt(nameof(ConfirmPrompt)));
             AddDialog(new DateResolverDialog());
@@ -24,7 +28,7 @@ namespace WrAppBot.Dialogs
                 TopicStepAsync,
                 MoodStepAsync,
                 ConfirmStepAsync,
-               FinalStepAsync,
+                FinalStepAsync,
             }));
 
             // The initial child Dialog to run.
@@ -33,36 +37,30 @@ namespace WrAppBot.Dialogs
 
         private async Task<DialogTurnResult> TopicStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var storyDetails = (StoryDetails)stepContext.Options;
 
-            if (storyDetails.Topic == null)
-            {
-                return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = MessageFactory.Text("What should your story be about?") }, cancellationToken);
-            }
-            else
-            {
-                return await stepContext.NextAsync(storyDetails.Topic, cancellationToken);
-            }
-        }
+            return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = MessageFactory.Text("What should your story be about?") }, cancellationToken);
+   
+         }
 
         private async Task<DialogTurnResult> MoodStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var storyDetails = (StoryDetails)stepContext.Options;
+            // Result of previous step
+            //stepContext.Values["Topic"] = (string)stepContext.Result;
 
-            if (storyDetails.Mood == null)
-            {
-                return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = MessageFactory.Text("What is the mood of your story?") }, cancellationToken);
-            }
-            else
-            {
-                return await stepContext.NextAsync(storyDetails.Mood, cancellationToken);
-            }
+            var storyDetails = (StoryDetails)stepContext.Options;
+            storyDetails.Topic = (string)stepContext.Result;
+
+            //var storyDetails = (StoryDetails)stepContext.Options;
+
+            return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = MessageFactory.Text("What is the mood of your story?") }, cancellationToken);
+
         }
 
         private async Task<DialogTurnResult> ConfirmStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            var storyDetails = (StoryDetails)stepContext.Options;
+            //stepContext.Values["Mood"] = (string)stepContext.Result;
 
+            var storyDetails = (StoryDetails)stepContext.Options;
             storyDetails.Mood = (string)stepContext.Result;
 
             var msg = $"Let us write a {storyDetails.Mood} story about {storyDetails.Topic}!";
@@ -74,7 +72,15 @@ namespace WrAppBot.Dialogs
         {
             if ((bool)stepContext.Result)
             {
-                var storyDetails = (StoryDetails)stepContext.Options;
+                //var storyDetails = (StoryDetails)stepContext.Options;
+
+                // Get the current profile object from user state.
+                var storyDetails = await _storyDetailsAccessor.GetAsync(stepContext.Context, () => new StoryDetails(), cancellationToken);
+
+                // This is already done in the previous steps
+                //storyDetails.Topic = (string)stepContext.Values["topic"];
+                //storyDetails.Mood = (string)stepContext.Values["mood"];
+
 
                 return await stepContext.EndDialogAsync(storyDetails, cancellationToken);
             }
