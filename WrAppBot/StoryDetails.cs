@@ -10,5 +10,9 @@ namespace WrAppBot
         public string Topic { get; set; }
 
         public string Mood { get; set; }
+
+        public string StoryLine { get; set; }
+
+
     }
 }
