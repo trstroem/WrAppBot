@@ -19,7 +19,6 @@ using System.Security.Cryptography.X509Certificates;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Bot.Builder.Adapters;
-using IronPython.Hosting;
 
 using System;
 using System.Collections.Generic;
