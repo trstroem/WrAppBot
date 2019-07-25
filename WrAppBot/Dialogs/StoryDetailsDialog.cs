@@ -111,11 +111,16 @@ namespace WrAppBot.Dialogs
             // {“documents”:[{“id”:“1”,“keyPhrases”:[“gnome”,“pink clothes”,“bitcoin wallet”]}],“errors”:[]}
 
 
-            // Getting the first keyword
-            var firstKeyword = deserializedDocument.KeyPhrases[0].keyword.ToString();
             var sentiment = deserializedDocument.Sentiment;
+            string resultFromStoryAI = "";
 
-            var resultFromStoryAI = callStoryAI(firstKeyword, sentiment);
+            foreach (var keyphrase in deserializedDocument.KeyPhrases) 
+                {
+                    resultFromStoryAI += callStoryAI(keyphrase.keyword.ToString(), sentiment);
+                }
+
+//            var firstKeyword = deserializedDocument.KeyPhrases[0].keyword.ToString();
+//            var resultFromStoryAI = callStoryAI(firstKeyword, sentiment);
 
             var msg = $"{resultFromStoryAI}";
 
@@ -200,14 +205,40 @@ namespace WrAppBot.Dialogs
 
         private string callStoryAI(string keyword, double sentiment)
         {
+
+            Random rand = new Random();
+
+            int phraseNumber = rand.Next(11);
+            string phraseText;
+
             if (sentiment > 0.5)
             {
-                return $"That sounds like a really cool {keyword}";
+                switch (phraseNumber)
+            	{
+                    case 1:
+                        phraseText = $"That sounds like a really cool {keyword}";
+                        break;
+
+		            default:
+                        phraseText = $"I really like what you tell me about the {keyword}";
+                        break;
+
+	            }
             }
             else
             {
-                return $"I am sorry to hear about the {keyword}...";
+                switch (phraseNumber)
+            	{
+                    case 1:
+                        phraseText = $"That sounds like a really horrible {keyword}";
+                        break;
+
+		            default:
+                        phraseText = $"I'm really sad to hear about the {keyword}";
+                        break;
+	            }
             }
+            return phraseText;
         }
 
         class Document
@@ -296,22 +327,6 @@ namespace WrAppBot.Dialogs
 
         }
 
-        public string PythonStory(string parameter, int serviceid)
-        {
-            var engine = Python.CreateEngine(); // Extract Python language engine from their grasp
-            var scope = engine.CreateScope(); // Introduce Python namespace (scope)
-            var d = new Dictionary<string, object>
-            {
-                { "serviceid", serviceid},
-                { "parameter", parameter}
-            }; // Add some sample parameters. Notice that there is no need in specifically setting the object type, interpreter will do that part for us in the script properly with high probability
-
-            scope.SetVariable("params", d); // This will be the name of the dictionary in python script, initialized with previously created .NET Dictionary
-            ScriptSource source = engine.CreateScriptSourceFromFile("PATH_TO_PYTHON_SCRIPT_FILE"); // Load the script
-            object result = source.Execute(scope);
-            parameter = scope.GetVariable<string>("parameter"); // To get the finally set variable 'parameter' from the python script
-            return parameter;
-        }
-
+ 
     }
 }
