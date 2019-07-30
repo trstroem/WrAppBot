@@ -16,7 +16,6 @@ using System.Net;
 using System.Net.Mime;
 using System.Runtime.Serialization.Json;
 using System.Security.Cryptography.X509Certificates;
-using Newtonsoft.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Bot.Builder.Adapters;
 
@@ -31,7 +30,8 @@ using Microsoft.Azure.CognitiveServices.Language.TextAnalytics.Models;
 using Microsoft.Rest;
 using System.Collections;
 using System.Diagnostics.Tracing;
-using Microsoft.Scripting.Hosting;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace WrAppBot.Dialogs
 {
@@ -103,7 +103,8 @@ namespace WrAppBot.Dialogs
 
             var resultCSString = await CallCognitiveWebServiceAsync(storyDetails.StoryLine);
 
-            var deserializedDocument = JsonConvert.DeserializeObject<CognitiveResult>(resultCSString);
+            //var deserializedDocument = JsonConvert.DeserializeObject<CognitiveResult>(resultCSString);
+            var deserializedDocument = JsonSerializer.Deserialize<CognitiveResult>(resultCSString);
 
             //End code for call to cognitive service
 
@@ -117,7 +118,7 @@ namespace WrAppBot.Dialogs
 
             foreach (var keyphrase in deserializedDocument.KeyPhrases) 
                 {
-                    resultFromStoryAI += callStoryAI(keyphrase.keyword.ToString(), sentiment);
+                    resultFromStoryAI += callStoryAI(keyphrase.Keyword.ToString(), sentiment);
                     numberOfCalls -= 1;
                     if (numberOfCalls == 0)
                     {
@@ -127,13 +128,10 @@ namespace WrAppBot.Dialogs
 
             resultFromStoryAI += "!";
 
-
             //            var firstKeyword = deserializedDocument.KeyPhrases[0].keyword.ToString();
             //            var resultFromStoryAI = callStoryAI(firstKeyword, sentiment);
 
             var msg = $"{resultFromStoryAI}";
-
-
 
             return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = MessageFactory.Text(msg) }, cancellationToken);
         }
@@ -197,19 +195,14 @@ namespace WrAppBot.Dialogs
 
             foreach (var phrase in keyPhraseResult)
             {
-
-                returnCSValues.KeyPhrases.Add(new KeyPhrase { keyword = phrase });
-
+                returnCSValues.KeyPhrases.Add(new KeyPhrase { Keyword = phrase });
             }
 
             // Not used:
             // DetectLanguageExample(client).Wait();
             // RecognizeEntitiesExample(client).Wait();
 
-
-            //TODO: build a return variable that contains both the sentiment and key phrases!!
-
-            return JsonConvert.SerializeObject(returnCSValues, Formatting.Indented);
+            return JsonSerializer.Serialize(returnCSValues);
         }
 
         private string callStoryAI(string keyword, double sentiment)
@@ -306,26 +299,25 @@ namespace WrAppBot.Dialogs
 
         class Document
         {
-            public string id { get; set; }
-            public string language { get; set; }
+            public string Id { get; set; }
+            public string Language { get; set; }
 
-            public string text { get; set; }
+            public string Text { get; set; }
 
         }
 
         class CognitiveResult
         {
-            [JsonProperty("keyphrases")]
             public List<KeyPhrase> KeyPhrases { get; set; }
 
-            [JsonProperty("sentiment")]
             public double Sentiment { get; set; }
 
         }
 
         class KeyPhrase
         {
-            public string keyword;
+            [JsonPropertyName("keyword")]
+            public string Keyword { get; set; }
         }
 
 

@@ -5,13 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="IronPython" Version="2.7.9" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.Azure.CognitiveServices.Language.TextAnalytics" Version="3.0.0" />
     <PackageReference Include="Microsoft.Bot.Builder.AI.Luis" Version="4.4.3" />
     <PackageReference Include="Microsoft.Bot.Builder.Dialogs" Version="4.4.3" />
     <PackageReference Include="Microsoft.Bot.Builder.Integration.AspNet.Core" Version="4.4.3" />
     <PackageReference Include="Microsoft.Recognizers.Text.DataTypes.TimexExpression" Version="1.1.5" />
+    <PackageReference Include="System.Text.Json" Version="4.6.0-preview7.19362.9" />
   </ItemGroup>
 
   <ItemGroup>
