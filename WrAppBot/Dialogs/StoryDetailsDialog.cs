@@ -13,8 +13,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using System.Net.Mime;
-using System.Runtime.Serialization.Json;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Bot.Builder.Adapters;
@@ -38,6 +40,7 @@ namespace WrAppBot.Dialogs
     public class StoryDetailsDialog : ComponentDialog
     {
         private readonly IStatePropertyAccessor<StoryDetails> _storyDetailsAccessor;
+        static HttpClient client = new HttpClient();
 
         public StoryDetailsDialog()
             : base(nameof(StoryDetailsDialog))
@@ -124,12 +127,24 @@ namespace WrAppBot.Dialogs
                     {
                         break;
                     }
-                }
+            }
 
             resultFromStoryAI += "!";
 
             //            var firstKeyword = deserializedDocument.KeyPhrases[0].keyword.ToString();
             //            var resultFromStoryAI = callStoryAI(firstKeyword, sentiment);
+
+
+            // Call to SAP HANA Text Analysis service:
+            // Example of call:
+            // https://wrappdbs0020313454trial.hanatrial.ondemand.com/public/wrapp/services/WrappTAService.xsjs?sampleText=storyDetails.StoryLine
+            var resultTAString = await CallHANATAWebServiceAsync(storyDetails.StoryLine);
+            var deserializedTA = JsonSerializer.Deserialize<CognitiveResult>(resultTAString);
+
+            // Now do something with the result from the HANA service.
+
+
+            // End HANA stuff
 
             var msg = $"{resultFromStoryAI}";
 
@@ -205,6 +220,22 @@ namespace WrAppBot.Dialogs
             return JsonSerializer.Serialize(returnCSValues);
         }
 
+        private async Task<string> CallHANATAWebServiceAsync(string documentText)
+        {
+           string Endpoint = "https://wrappdbs0020313454trial.hanatrial.ondemand.com/public/wrapp/services/WrappTAService.xsjs";
+
+            string path = Endpoint + "?sampleText='" + documentText + "'";
+            string result = "";
+
+            HttpResponseMessage response = await client.GetAsync(path);
+            if (response.IsSuccessStatusCode)
+            {
+                result = await response.Content.ReadAsStringAsync();
+            }
+
+            return JsonSerializer.Serialize(result);
+        }
+
         private string callStoryAI(string keyword, double sentiment)
         {
 
@@ -224,13 +255,13 @@ namespace WrAppBot.Dialogs
                         phraseText = $" I once had a {keyword}, too! But then, someone stole it";
                         break;
                     case 3:
-                        phraseText = $" When I was younger, I wanted to be a {keyword}. They're so cool";
+                        phraseText = $" When I was younger, I wanted to be a {keyword}. They're so cool!";
                         break;
                     case 4:
                         phraseText = $" My uncle once trapped a {keyword} in his swimming pool. Can you believe it?";
                         break;
                     case 5:
-                        phraseText = $" I like {keyword}'s. Especially the red ones";
+                        phraseText = $" I like {keyword}'s. Especially the red ones.";
                         break;
                     case 6:
                         phraseText = $" Can you tell me more about the {keyword}?";
@@ -242,14 +273,14 @@ namespace WrAppBot.Dialogs
                         phraseText = $" What did the {keyword} look like?";
                         break;
                     case 9:
-                        phraseText = $" Was it a smelly {keyword}? I heard most of them are";
+                        phraseText = $" Was it a smelly {keyword}? I heard most of them are.";
                         break;
                     case 10:
                         phraseText = $" Can I play with your {keyword}? It's so boring to live inside a computer..";
                         break;
 
                     default:
-                        phraseText = $" I really like what you tell me about the {keyword}";
+                        phraseText = $" I really like what you tell me about the {keyword}.";
                         break;
 
 	            }
@@ -259,10 +290,10 @@ namespace WrAppBot.Dialogs
                 switch (phraseNumber)
             	{
                     case 1:
-                        phraseText = $" That sounds like a really horrible {keyword}";
+                        phraseText = $" That sounds like a really horrible {keyword}...";
                         break;
                     case 2:
-                        phraseText = $" That sounds like a sad story. Tell me more about the {keyword}";
+                        phraseText = $" That sounds like a sad story. Tell me more about the {keyword}!";
                         break;
                     case 3:
                         phraseText = $" What did the {keyword} look like? Was it scary?";
@@ -280,7 +311,7 @@ namespace WrAppBot.Dialogs
                         phraseText = $" I can't believe it. A real {keyword}?";
                         break;
                     case 8:
-                        phraseText = $" I don't really like the thing about the {keyword}";
+                        phraseText = $" I don't really like the thing about the {keyword}...";
                         break;
                     case 9:
                         phraseText = $" I'm sure the {keyword} was big and ugly, right?";
