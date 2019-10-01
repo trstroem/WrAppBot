@@ -6,13 +6,14 @@ This project aims to create a chatbot that uses input from users to generate a s
 
 An ideal example would look something like this:
 
-WrAppBot: Hi! What should your story be about?
-User: I want to write about foxes!
-WrAppBot: Foxes are so cool! What is the name of the fox?
-User: Let's call him Billy
-WrAppBot: Once upon a time, there was a fox called Billy. He lived in a big forest. One morning he woke up and heard a loud noice! What do you think happened?
-User: It was an angry bear!!
-WrAppBot: Cool! I love angry bears! What's the name of the bear?
+WrAppBot: Hi! What should your story be about? <br>
+User: I want to write about foxes! <br>
+WrAppBot: Foxes are so cool! What is the name of the fox? <br>
+User: Let's call him Billy <br>
+WrAppBot: Once upon a time, there was a fox called Billy. He lived in a big forest. One morning he woke up and heard a loud noice! What do you think happened? <br>
+User: It was an angry bear!! <br>
+WrAppBot: Cool! I love angry bears! What's the name of the bear? <br>
+
 ...
 
 For this to happen, we need two things: 1) a decent way to extract nouns/verbs/names/other word classes from the text (plus some sentiment analysis), and 2) a storyline generator to build on the extracted info.
