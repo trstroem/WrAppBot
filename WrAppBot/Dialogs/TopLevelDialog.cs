@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 //
 // Generated with Bot Builder V4 SDK Template for Visual Studio CoreBot v4.3.0
@@ -14,22 +14,28 @@ using Microsoft.Recognizers.Text.DataTypes.TimexExpression;
 
 namespace WrAppBot.Dialogs
 {
-    public class MainDialog : ComponentDialog
+    public class TopLevelDialog : ComponentDialog
     {
         protected readonly IConfiguration Configuration;
         protected readonly ILogger Logger;
 
-        public MainDialog(IConfiguration configuration, ILogger<MainDialog> logger)
-            : base(nameof(MainDialog))
+        public TopLevelDialog(IConfiguration configuration, ILogger<TopLevelDialog> logger)
+            : base(nameof(TopLevelDialog))
         {
             Configuration = configuration;
             Logger = logger;
- 
+
             AddDialog(new TextPrompt(nameof(TextPrompt)));
-            AddDialog(new TopLevelDialog());
- 
+            AddDialog(new StoryDetailsDialog());
+            AddDialog(new WaterfallDialog(nameof(WaterfallDialog), new WaterfallStep[]
+            {
+                IntroStepAsync,
+                ActStepAsync,
+                FinalStepAsync,
+            }));
+
             // The initial child Dialog to run.
-            InitialDialogId = nameof(TopLevelDialog);
+            InitialDialogId = nameof(WaterfallDialog);
         }
 
         private async Task<DialogTurnResult> IntroStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -60,7 +66,7 @@ namespace WrAppBot.Dialogs
             // will have multiple different Intents each corresponding to starting a different child Dialog.
 
             // Run the StoryDetailsDialog giving it whatever details we have from the LUIS call, it will fill out the remainder.
-            return await stepContext.BeginDialogAsync(nameof(TopLevelDialog), storyDetails, cancellationToken);
+            return await stepContext.BeginDialogAsync(nameof(StoryDetailsDialog), storyDetails, cancellationToken);
         }
 
         private async Task<DialogTurnResult> FinalStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)

@@ -46,14 +46,15 @@ namespace WrAppBot.Dialogs
             : base(nameof(StoryDetailsDialog))
         {
 
-
             AddDialog(new TextPrompt(nameof(TextPrompt)));
             AddDialog(new ConfirmPrompt(nameof(ConfirmPrompt)));
-            AddDialog(new DateResolverDialog());
+            //AddDialog(new DateResolverDialog());
+
+            // This is the "main" dialog for WrApp. It currently contains separate steps for
+            // harvesting the story topic, mood, and then presents the user with the first storyline,
+            // followed by a confirmation question and a final step. Quite useless, really.
             AddDialog(new WaterfallDialog(nameof(WaterfallDialog), new WaterfallStep[]
             {
-                TopicStepAsync,
-                MoodStepAsync,
                 StoryLineAsync,
                 ConfirmStepAsync,
                 FinalStepAsync,
@@ -63,37 +64,15 @@ namespace WrAppBot.Dialogs
             InitialDialogId = nameof(WaterfallDialog);
         }
 
-        private async Task<DialogTurnResult> TopicStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
-        {
-
-            return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = MessageFactory.Text("What should your story be about?") }, cancellationToken);
-
-        }
-
-        private async Task<DialogTurnResult> MoodStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
-        {
-            // Result of previous step
-            //stepContext.Values["Topic"] = (string)stepContext.Result;
-
-            var storyDetails = (StoryDetails)stepContext.Options;
-            storyDetails.Topic = (string)stepContext.Result;
-
-            //var storyDetails = (StoryDetails)stepContext.Options;
-
-            return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = MessageFactory.Text("What is the mood of your story?") }, cancellationToken);
-
-        }
-
         private async Task<DialogTurnResult> StoryLineAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
         {
-            //Result of previous step
+            // Get the Mood from the value harvested in the previous step
             var storyDetails = (StoryDetails)stepContext.Options;
             storyDetails.Mood = (string)stepContext.Result;
 
             //var storyDetails = (StoryDetails)stepContext.Options;
 
             return await stepContext.PromptAsync(nameof(TextPrompt), new PromptOptions { Prompt = MessageFactory.Text($"Write the first line of your {storyDetails.Mood} story about {storyDetails.Topic}!") }, cancellationToken);
-
         }
 
         private async Task<DialogTurnResult> ConfirmStepAsync(WaterfallStepContext stepContext, CancellationToken cancellationToken)
@@ -102,11 +81,14 @@ namespace WrAppBot.Dialogs
             var storyDetails = (StoryDetails)stepContext.Options;
             storyDetails.StoryLine = (string)stepContext.Result;
 
-            var resultCS = new CognitiveResult();
+            string resultFromStoryAI = "";
 
+            /* Cognitive services call has been commented out for now due to subscription de-activated!!!
+             
+            // Variant 1: Call Azure Cognitive Services
+            // var resultCS = new CognitiveResult();    never used
             var resultCSString = await CallCognitiveWebServiceAsync(storyDetails.StoryLine);
 
-            //var deserializedDocument = JsonConvert.DeserializeObject<CognitiveResult>(resultCSString);
             var deserializedDocument = JsonSerializer.Deserialize<CognitiveResult>(resultCSString);
 
             //End code for call to cognitive service
@@ -116,7 +98,7 @@ namespace WrAppBot.Dialogs
 
 
             var sentiment = deserializedDocument.Sentiment;
-            string resultFromStoryAI = "";
+            
             int numberOfCalls = 2;
 
             foreach (var keyphrase in deserializedDocument.KeyPhrases) 
@@ -134,21 +116,27 @@ namespace WrAppBot.Dialogs
             //            var firstKeyword = deserializedDocument.KeyPhrases[0].keyword.ToString();
             //            var resultFromStoryAI = callStoryAI(firstKeyword, sentiment);
 
+            // End Variant 1: Call Azure CS
 
-            // Call to SAP HANA Text Analysis service:
+            */
+
+            // Variant 2: Call to SAP HANA Text Analysis service:
             // Example of call:
-            // https://wrappdbs0020313454trial.hanatrial.ondemand.com/public/wrapp/services/WrappTAService.xsjs?sampleText=storyDetails.StoryLine
+            // https://trondsdbs0020313454trial.hanatrial.ondemand.com/public/wrapp/services/WrappTAService.xsjs?sampleText=storyDetails.StoryLine
             var resultTAString = await CallHANATAWebServiceAsync(storyDetails.StoryLine);
-            var deserializedTA = JsonSerializer.Deserialize<CognitiveResult>(resultTAString);
+            var deserializedTA = JsonSerializer.Deserialize<HANATAResult>(resultTAString);
+
+            // Blanking out the result from the call to Azure CS above, as we want to replace it with HANA intelligence!
+            resultFromStoryAI = "";
 
             // Now do something with the result from the HANA service.
+            resultFromStoryAI = callStoryAITA(deserializedTA.TAKeyPhrases);
 
-
-            // End HANA stuff
+            // End Variant 2
 
             var msg = $"{resultFromStoryAI}";
 
-            return await stepContext.PromptAsync(nameof(ConfirmPrompt), new PromptOptions { Prompt = MessageFactory.Text(msg) }, cancellationToken);
+            return await stepContext.ReplaceDialogAsync(nameof(StoryDetailsDialog), storyDetails, cancellationToken);
         }
 
 
@@ -183,11 +171,9 @@ namespace WrAppBot.Dialogs
 
         private async Task<string> CallCognitiveWebServiceAsync(string documentText)
         {
-
             //New
             string SubscriptionKey = "ba133c233f2849ea9f904b15903fda74";
             string Endpoint = "https://westeurope.api.cognitive.microsoft.com";
-
 
             var credentials = new ApiKeyServiceClientCredentials(SubscriptionKey);
             var client = new TextAnalyticsClient(credentials)
@@ -222,7 +208,7 @@ namespace WrAppBot.Dialogs
 
         private async Task<string> CallHANATAWebServiceAsync(string documentText)
         {
-           string Endpoint = "https://wrappdbs0020313454trial.hanatrial.ondemand.com/public/wrapp/services/WrappTAService.xsjs";
+           string Endpoint = "https://trondsdbs0020313454trial.hanatrial.ondemand.com/public/wrapp/services/WrappTAService.xsjs";
 
             string path = Endpoint + "?sampleText='" + documentText + "'";
             string result = "";
@@ -233,7 +219,8 @@ namespace WrAppBot.Dialogs
                 result = await response.Content.ReadAsStringAsync();
             }
 
-            return JsonSerializer.Serialize(result);
+            //return JsonSerializer.Serialize(result);
+            return result;
         }
 
         private string callStoryAI(string keyword, double sentiment)
@@ -328,27 +315,77 @@ namespace WrAppBot.Dialogs
             return phraseText;
         }
 
+        private string callStoryAITA(List<TAKeyPhrase>keyPhrases)
+        {
+            string phraseText = "";
+            Boolean usedNouns = false;
+            Boolean usedAdjectives = false;
+            Boolean usedProperNames = false;
+
+            foreach (var takeyphrase in keyPhrases)
+            {
+                if (takeyphrase.Type.ToString() == "noun" && usedNouns == false)
+                {
+                    phraseText += "I would love to hear more about your " + takeyphrase.Value.ToString() + "! ";
+                    usedNouns = true;
+                }
+
+                /*
+                if (takeyphrase.Type.ToString() == "verb")
+                {
+                    phraseText += "Did you really " + takeyphrase.Value.ToString() + "? What happened next? ";
+                }
+                */
+
+                if (takeyphrase.Type.ToString() == "proper name" && usedProperNames == false)
+                {
+                    phraseText += takeyphrase.Value.ToString() + "! That's a cool name! ";
+                    usedProperNames = true;
+                }
+
+                if (takeyphrase.Type.ToString() == "adjective" && usedAdjectives == false)
+                {
+                    phraseText += "Wow! You really sure it was " + takeyphrase.Value.ToString() + "? ";
+                    usedAdjectives = true;
+                }
+
+            }
+            return phraseText;
+        }
+
         class Document
         {
             public string Id { get; set; }
             public string Language { get; set; }
 
             public string Text { get; set; }
-
         }
 
         class CognitiveResult
         {
             public List<KeyPhrase> KeyPhrases { get; set; }
-
+ 
             public double Sentiment { get; set; }
+        }
 
+        class HANATAResult
+        {
+            public List<TAKeyPhrase> TAKeyPhrases { get; set; }
         }
 
         class KeyPhrase
         {
             [JsonPropertyName("keyword")]
             public string Keyword { get; set; }
+        }
+
+        class TAKeyPhrase
+        {
+            [JsonPropertyName("type")]
+            public string Type { get; set; }
+
+            [JsonPropertyName("value")]
+            public string Value { get; set; }
         }
 
 
@@ -410,9 +447,6 @@ namespace WrAppBot.Dialogs
             var kpResults = await client.KeyPhrasesAsync(false, inputDocuments);
 
             return kpResults.Documents[0].KeyPhrases;
-
         }
-
- 
     }
 }
